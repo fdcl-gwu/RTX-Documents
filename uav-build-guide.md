@@ -1,76 +1,123 @@
 # UAV Build Guide
-_Written by GW RTX Capstone Team_
-## Getting Started
-This build was done entirely at the Flight Dynamics and Control Lab at GWU. 
-This specific build uses the **Readytosky S500 Kit**. The finished frame is shown below, however additonal work needs to be done before the frame can be completed.
+Written by GW RTX Drone Challenge Team
 
-![Readytosky S500 Frame](/Photos/init_frame.jpg)
- 
-Before screwing on the arms and top metal plate, we have to do some work on the bigger, bottom metal plate. Get the frame to the state shown below.
+## Components Needed:
 
-![Lower Plate](/Photos/lowerPlate.jpg)
-
-We need to solder on pairs of wires with bullet connectors attached. To attach the wires to the frame, use the exposed golden points found on each corner of the frame. These points are circled in red in the first picture below. A wire with a male bullet connector should be soldered to the postive side, and a wire with a female connector should be soldered to the negative side. We can secure the wires using a similar process to the through hole mounting described later in this guide under [PCB Assembly](#pcb-assembly). This needs to be done for every DC motor, giving us 4 pairs of wires soldered to the frame in total. These wires will eventually be connected to the ESCs, as described later on.
-
-![Locations to solder wires for ESCs](/Photos/lowerPlateESCsolder.jpg)
-![Pair of wires attached to each corner of the frame](/Photos/ESCframeWires.jpg)
-
- Next we need to solder on a __female__ power supply connector to the front of the frame, near the __S500__ text. Once again, more detailed instructions about how to solder the power supply connector to the wires can be found under [PCB Assembly](#pcb-assembly). This power supply will eventually be connected to power the PCB and Jetson. 
- 
-![Locations to solder Jetson power supply](/Photos/lowerPlateJetsonSolder.jpg)
-![Jetson Power Supply](/Photos/jetsonFrameWires.jpg)
-
- Lastly, a __male__ power supply connector has to be soldered onto the side of the plate near the large "__+__" and "__-__" symbols. This connector will eventually be connected to the overall DC power supply.
-
-![Locations to solder overall power supply wires](/Photos/lowerPlatePowerSolder.jpg)
-![Overall Power Supply](/Photos/powerFrameWires.jpg)
-
-After this has been done, the arms and top plate can be screwed on. We also attach a DC motor to each arm of the drone, with their wires pointing towards the middle of the frame.
+### Quadcopter:
+- Motors (x4): T-Motor MN3110-17 KV-700
+- Frame:
+- ESC (x4): 
+- Jetson Orin Nano
+  - NVME SSD (see Amazon purchase link)
+- 4s 3-5000mAh LiPo Battery
+- VN100 IMU
+- 5V regulator
+- Adafruit PCA9685 PWM Converter Board
+- 5-6 Refelctive Markers
+- Wires and mounting hardware
 
 
-The computer we use is the NVIDIA Jetson TX2 with a [Sprocket Carrier Board](http://connecttech.com/product/sprocket-carrier-nvidia-jetson-tx2-jetson-tx1/). In order to configure the Jetson, we must attach it to the official NVIDIA Jetson Development Board.
+# Frame Assembly
 
-![NVIDIA Jetson Development Kit](/Photos/NVIDIAdevKit.jpg)
-## Configuration
-*The configuration of the Jetson TX2 is loosely based off the information in steps 1-3 in this [link](https://fdcl-gwu.github.io/jetson-config/).*
+## Step 1: Assemble the frame. 
+This will include screwing arms to the main plate of the frame. Some frames will have power distribution pads on the frame base plate (labeled with "+" and "-"). If this is the case, create and attach a battery lead with XT60 connector to to the baseplate. To do this, solder a black and a red wire (between 12-16 AWG, but use same gauge for both wires) to a male XT60 connector (the one with the two, golden prongs). Then connect the other end of the red wire to the large "+" pad on the plate of the frame, and the black wire to the large "-". See Soldering 101 in Appendix for details about soldering.
 
-Configuration consists mainly of two parts: installing JetPack, and installing the board support package (BSP). The steps to install JetPack are as follows:
-1. Download and install the [NVIDIA SDK Manager](https://docs.nvidia.com/sdk-manager/download-run-sdkm/index.html#download)
-2. Run the manager and change **Target Hardware** to **TX2**
-3. Select all and accept. Make sure that the Jetson is connected to the development board with a keyboard, mouse, and monitor as shown above. It should also have a connection to a host computer using the micro USB port
-4. Wait for installations to run on the TX2. After the flashing is completed, the TX2 will reboot. Once the login screen appears, enter the username and password of the TX2 onto the screen that appears on the **host computer**
-5. Finish and exit
+IMG
 
-The next step is to install the BSP. This guide assumes you are using JetPack 3.3, and L4T V32.1.0. If you are using a different version, instructions can be found at this [link](http://connecttech.com/resource-center/cti-l4t-nvidia-jetson-board-support-package-release-notes/).
-1. Install the BSP [package](http://www.connecttech.com/ftp/Drivers/CTI-L4T-V121.tgz)
-2. Copy the package into /nvidia/nvidia_sdk/64_TX2/Linux_for_Tegra/
-3. Using the terminal, `cd` into the folder that you just copied the package into. Extract the BSP: `tar -xzf CTI-L4T-V121.tgz`
-4. `cd` into the CTI-L4T folder
-5. Install the script: `sudo ./install.sh`
-6. Move back to the Linux_for_Tegra folder: `cd ..`
-7. Use CTI assisited flashing: `./cti-flash.sh`
-8. Select option **5-Sprocket**, followed by **Base**, followed by **TX2**
+You may also want to attach a large capacitor to the pads where you soldered the battery lead. Since our UAV will draw bursts of current, the capacitor will help keep the voltage stable.
+
+## Step 2: Attach Motors and ESCs
+For each of the arms on the frame, screw on the motor _using the 4 provided motor screws that came with the motor_. If the motor has mutliple screw holes in its base, use the 4 which are symetrically located around the shaft.
+
+For each arm/motor, place an ESC on the upper side of the arm. Make sure to leave some open space on the arm so that we can later attach VICON reflective markers on the arms. You can attach the ESC using zipties, and it should be oriented on the arm such that the +/-/signal wires should face the center of the frame, and the three pads/wires on the opposite side of the ESC face the motor.
+
+For the wiring of the ESC, connect the __three wires__ from the motor to the __three pads__ sometimes labeled A,B,C. The order doesn't matter for right now, as we will swap them later when testing motor spin direction. Then, on the other side of the ESC, connect a red wire (18 AWG) to the "+" and a black wire to the "-" pads on the other side of the ESC. Then, finding an available "+" and "-" pair on the frame base plate, connect the respective wires to those pads. 
+- Note: since voltage is constant in a parallel circuit, each of the "+" and "-" pads on the frame base plate will share the same voltage coming from the LiPo battery.
+
+Lastly, the thin black and white braided wire should already be attached to the ESC. The __white__ wire is the PWM Signal wire, while the __black__ wire is Ground (GND). 
+
+
+## Step 3: Attach IMU
+When attaching the IMU, placement is very important. Before doing anything, put a small rubber mat underneath the IMU in order to dampen the effects of the vibrations coming from the motors.
+
+On the IMU are three axes - x,y,z - and they correspond to the directions of the IMU's coordinate system. When mounting, place the IMU __UPSIDE DOWN__ at the center of mass of the frame. Then, rotate the IMU such that the x-axis of the IMU is aligned with one of the arms of the frame (in the code, this arm will then be refered to as body axis 1 (b1, or arm1)). If done correctly, when looking at the underside of the frame, you should see the red part of the IMU with the x- axis arrow pointing along arm 1 of the frame.
+
+IMG
+
+### Additional Information:
+If the IMU is not connected to the black connector, do the following:
+
+First we need to prepare a 4 wire ribbon cable. The cable should be stripeed and split up near the end, and we need to solder on male bullet connectors. This can be done by placing a bundle of solid solder into the connector, similar to how we did it with the power supply connector. Apply heat with the iron using the small hole found on the side of the connector and push the wire further in until it is secured.
+
+NATHAN IMG
+
+Next it needs to be connected to the IMU using a connector. We use a ten pin connector, but the ribbon cable is only connected to it at 4 points. The image belowe shows the exact pins that should be inserted into the connector. Hot glue can be applied to the open side of the connector to keep the cables in place.
+
+NATHAN IMG
+
+## Step 4: PWM Converter Board:
+The Jetson sends motor signals using I2C, but the ESCs we use only take in PWM signals. Thus, we need to use a converter board which converts the signal. 
+
+When looking at the PCA9685 boardfrom the front (with the blocks of 4x4 pins on the bottom), we will be using the first 4x4 pin header block (columns labeled 0-4) to connect our ESCs. For the ESC on arm 1 of the frame (see Step 3), connect it's white wire to the PWM pin of column 0, and it's black wire to the GND pin of column 0. This should be straightforward, as many ESCs come with a plastic connector that can be plugged directly into the pins. Then, continuing clockwise from arm 1(when looking at the frame from above), connect ESC2 to the column 1 pins. Do this for the remaining ESCs.
+
+At this point, the ESCs are connected to the converter board, but we have not yet connected the board to the Jetson. We will leave this for a later step, but for now, just make sure to keep the pins on the left side of the board accessible. Specifically, __GND, SCL,SDA, and VCC__. 
+
+IMPORTANT: When attaching the converter board to the frame, make sure to insulate it's underside from any other electrical contact. It is very easy to short the board since all pins are exposed on both sides of the board.
+
+
+### Additional Information: 
+Depending on whether the board can be successfully addressed from the code, you may need to change the converter board's address. To do this, add a solder bridge on pads A0 and A1 pads in upper right corner of board. This will change the default board address from 0x40 to 0x43.
+
+5V Regulator
+
+## Step 5: 5V Regulator
+Sometimes the Jetson's 5V output pins will not output exactly 5V, which can cause issues since we power our IMU and PWM Converter board with 5V. To solve this, we use a 5V regulator. On the regulator, connect the pad labeled "IN 6-35V" to "+" battery voltage, and "GND" to a "-" battery voltage. Then, connect the "OUT 5/12V" to the component needed a 5V power source, and the "-" pad to an available GND pad.
+
+IMG
+
+If multiple components need a 5V, consider using a small breadboard that you can plug things in to.
+
+## Step 6: Mounting Jetson and connecting wires.
+Using a 3D printed mount, attach the jetson to the top of the frame. Make sure not to pierce the underside of the Jetson with any screws that may be protruding from the top of the frame. The only constraint when mounting the jetson is that you can reach the pin row with all the wires that need to be plugged into it.
+
+
+The IMU will have a preset BAUD rate and frequency. The BAUD rate is either 230400 or 115200, and can be determined my using the VN100 software (ask Maneesh). Or, if you're lucky, it was written on the IMU itself in permanent ink by a former FDCL lab member.
+
+From | To
+---|---
+IMU 5V | 5V regulator "+" 
+IMU GND| 5V regulator "-"
+IMU RX| Jetson Pin 8
+IMU TX| Jetson Pin 10
+
+- If using the IMU with BAUD=230400, f=200Hz, orange wire is IMU RX, yellow wire is IMU TX.
+
+From | To
+---|---
+PCA9685 VCC | 5V regulator "+" 
+PCA9685 GND | 5V regulator "-"
+PCA9685 SDA | Jetson Pin 3
+PCA9685 SCL | Jetson Pin 5
+
+Refer to the following datasheets for additional details:
+- VN100: p.26/101 https://mpt-internal.uni-hohenheim.de/lib/exe/fetch.php?media=sensors:vn-100_user_manual.pdf
+- Jetson Orin Nano: https://jetsonhacks.com/nvidia-jetson-orin-nano-gpio-header-pinout/
+- PWM Converter Board (PCA9685): https://learn.adafruit.com/16-channel-pwm-servo-driver/pinouts
+
+### Final Comments
+After everything is connected, make sure keep the area around the arms where the propellers will free. This may mean reorganizing wires, and taping things down.
+
+
+
+# Jetson Orin Nano Configuration
+
+
+
+
+
 
 ## PCB Assembly
-We use a custom printed circuit board that must be wired according to the schematic found [here](https://github.com/fdcl-gwu/jetson-pcb/releases/tag/v2.0). This part of the build is much easier with an intermediate understanding of electronics and experience with soldering is also very helpful. There are mainly 2 different methods for soldering the components: through-hole and surface mounting. Through-hole is used when a hole is already built into the board, and we have to push a component lead through it. In this build, we use this method to mount the power supply as well as any connector or header pins. This method is relatively straightforward, as you simply stick the lead through the hole, apply pressure with the soldering iron to the base of the lead, and feed solder into the joint until you create a cone-like shape of solder. 
 
-![Through Hole Example](/Photos/throughHoleExample.jpg)
-
-The other method is surface mounting, and is used whenever we have to mount any component directly to the board without the use of a premade hole. This is used to attach most of the parts in this build including resistors, capacitors, and LEDs. Generally for this method you want to begin by tinning the component that needs to be mounted. Tinning is simply applying flux to the component lead and then applying solder to create a coat of metal around the lead. You can usually apply solder to the lead by melting solder onto the soldering iron, and then touching the iron to the lead. Once this is done, apply more flux to the surface that you are mounting the component onto. Push the component into place and put pressure with the iron. You usually have to also put more solder onto the iron to create a more secure connection.
-
-![Surface Mount Example](/Photos/surfaceMountExample.jpg)
-
-In the example above, each of the three legs have been tinned and surface mounted, as well as the larger black body.
-
-The component with the black and red wires shown below is the PCB power supply. To connect the wires to the yellow __male__ connector, first you have to fill the connector with solder. This can be done by placing a bundle of solid solder into the connector, and melting it with the iron. After tinning the wires, you can remelt the solder in the connector and push the wires in to secure them. This connector will be connected to the female connector that we soldered onto the bottom metal plate of the frame earlier on.
-
-![PCB Power Supply](/Photos/PCBpowerSupply.jpg)
-
- If the schematic is followed correctly, the board should match as follows.
-
-![Finished PCB](/Photos/CombinedPCB.jpg) 
-
- Take note of the small resistors that have been soldered onto the board found on the right side of the picture. After all the soldering has been finished, use a cotton swab with a cleaning solution such as isopropyl alchol to clean the board of any flux or other material that could be corrosive.
  
   The IMU is the large red component found on the left side of the picture above. This sensor is responsible for collecting a lot of critical data including angular rate and acceleration. We put a small rubber mat underneath the IMU in order to minimize the effects of the vibrations coming from the motors. Additionally, the wired connector attached to the IMU (the black component south of the IMU in the left picture) is slightly more complicated. First we need to prepare a 4 wire ribbon cable. The cable should be stripeed and split up near the end, and we need to solder on male bullet connectors. This can be done by placing a bundle of solid solder into the connector, similar to how we did it with the power supply connector. Apply heat with the iron using the small hole found on the side of the connector and push the wire further in until it is secured.
   
@@ -190,3 +237,24 @@ Flying the drone can be very dangerous, so it is important to the take some saft
 To fly, place connect the drone to the battery and place it on top of the elevated platform in the netted area. open up the GUI using the same steps as the [PCB Assembly](#pcb-assembly). You can use the buttons labeled "Idle", "Warm-up", etc. to perform basic movements of the drone. Before the drone actually flies, it is important to always use the "Warm-up" button, to check that all the propellers are working before taking off. Press the "Takeoff" button to get the drone in the air. The drone can be manually controlled using the keyboard on the host computer. Use the __WASD__ keys to move the drone around. Use the "__L__" key to make it go lower, and the "__P__" key to make it go higher. The "__M__" key kills the motors, so you should have one finger on this key at __all times__ in case you lose control on the drone. Note that this key should only be used in emergencies, and it is __not__ a suitable option to use when landing. The easiest way to operate the drone would be to use your left hand for the WASD keys, and use 3 fingers on your right hand to have access to the altitude control, and the kill keys. To properly land, make sure the drone is hovering above a flat surface within the flight area. You can either manually land by lowering the drone, or just pressing the "Land" button on the GUI.
 
 ![Finished Drone](/Photos/finishedDrone.jpg)
+
+
+
+# Appendix
+
+## Soldering 101
+### Through-hole 
+Through-hole is used when a hole is already built into the board, and we have to push a component lead through it. In this build, we use this method to mount the power supply as well as any connector or header pins. This method is relatively straightforward, as you simply stick the lead through the hole, apply pressure with the soldering iron to the base of the lead, and feed solder into the joint until you create a cone-like shape of solder. 
+
+### Surface Mounting
+The other method is surface mounting, and is used whenever we have to mount any component directly to the board without the use of a premade hole. Generally for this method you want to begin by tinning the component that needs to be mounted. Tinning is simply applying flux to the component lead and then applying solder to create a coat of metal around the lead. You can usually apply solder to the lead by melting solder onto the soldering iron, and then touching the iron to the lead. Once this is done, apply more flux to the surface that you are mounting the component onto. Push the component into place and put pressure with the iron. You usually have to also put more solder onto the iron to create a more secure connection.
+
+### XT60 Soldering
+To connect the wires to the yellow XT60 connector, first you have to fill the connector with solder. This can be done by placing a bundle of solid solder into the connector, and melting it with the iron. After tinning the wires, you can remelt the solder in the connector and push the wires in to secure them. This connector will be connected to the female connector that we soldered onto the bottom metal plate of the frame earlier on.
+
+
+After all the soldering has been finished, use a cotton swab with a cleaning solution such as isopropyl alchol to clean the board of any flux or other material that could be corrosive.
+
+
+## TODOs: 
+- add WIFI antennas
