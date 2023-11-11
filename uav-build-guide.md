@@ -8,7 +8,7 @@ Written by GW RTX Drone Challenge Team
 - Frame:
 - ESC (x4): 
 - Jetson Orin Nano
-  - NVME SSD (see Amazon purchase link)
+  - NVME SSD (recommended: Crucial P3 500GB)
 - 4s 3-5000mAh LiPo Battery
 - VN100 IMU
 - 5V regulator
@@ -78,11 +78,9 @@ IMG
 If multiple components need a 5V, consider using a small breadboard that you can plug things in to.
 
 ## Step 6: Mounting Jetson and connecting wires.
-Using a 3D printed mount, attach the jetson to the top of the frame. Make sure not to pierce the underside of the Jetson with any screws that may be protruding from the top of the frame. The only constraint when mounting the jetson is that you can reach the pin row with all the wires that need to be plugged into it.
+Using a 3D printed mount, attach the jetson to the top of the frame. Make sure not to pierce the underside of the Jetson with any screws that may be protruding from the top of the frame. The only constraint when mounting the jetson is that you can reach the pin row with all the wires that need to be plugged into it. Also, you will need to create a male XT60-to-barrel adapter so that the Jetson can be powered from the battery. You can use the same barrel that the Jetson Orin Nano comes with.
 
-
-The IMU will have a preset BAUD rate and frequency. The BAUD rate is either 230400 or 115200, and can be determined my using the VN100 software (ask Maneesh). Or, if you're lucky, it was written on the IMU itself in permanent ink by a former FDCL lab member.
-
+IMU Connections:
 From | To
 ---|---
 IMU 5V | 5V regulator "+" 
@@ -92,6 +90,7 @@ IMU TX| Jetson Pin 10
 
 - If using the IMU with BAUD=230400, f=200Hz, orange wire is IMU RX, yellow wire is IMU TX.
 
+PCA9685 Connections:
 From | To
 ---|---
 PCA9685 VCC | 5V regulator "+" 
@@ -110,87 +109,72 @@ After everything is connected, make sure keep the area around the arms where the
 
 
 # Jetson Orin Nano Configuration
+## Setup Jetson
+Setup for Jetson Orin Nano using NVMe SSD:
+
+1. Follow the instructions linked here to boot the Orin from the installed SSD: https://www.youtube.com/watch?v=q4fGac-nrTI
+    - NOTE: in order to flash, you will need a linux x86 host computer running Ubuntu 20.04.
+    - If you flash it successfully, but after connecting to peripherals (monitor, keyboard, and mouse) you are prompted with a UEFI shell, just reflash the jetson.
+    - For a generic SD card follow the instructions here: https://developer.nvidia.com/embedded/learn/get-started-jetson-orin-nano-devkit#write
+
+2. Install JTOP to easily monitor the Jetson, follow the instructions here: https://jetsonhacks.com/2023/02/07/jtop-the-ultimate-tool-for-monitoring-nvidia-jetson-devices/.
+
+3. Next, install ROS-Noetic (steps found here: http://wiki.ros.org/noetic/Installation/Ubuntu)
+4. Install dependencies:
+    <ol type="a">
+      <li>catkin tools: <code>$ sudo apt-get install python3-catkin-tools python3-vcstool python3-osrf-pycommon </code> </li>
+      <li>Ceres Solver (system dependencies): <code>$ sudo apt-get install libglew-dev libyaml-cpp-dev</code> </li>
+      <li>Ceres Solver (dependencies): <code>$ sudo apt-get install libblas-dev liblapack-dev libsuitesparse-dev </code> </li>
+      <li>OpenVins: <code>$ sudo apt-get install libeigen3-dev libboost-all-dev libceres-dev </code> </li>
+      <li>ROS Gazebo: <code>$ sudo apt-get install ros-noetic-gazebo-ros-pkgs ros-noetic-gazebo-ros-control </code> </li>
+    </ol>
+5. Other useful packages:
+
+    <ol type="a">
+      <li><code>$ sudo apt-get install ros-noetic-pcl-ros </code> </li>
+      <li><code>$ sudo apt-get install ros-noetic-cv-bridge</code> </li>
+    </ol>
+6. Make sure to associate the Jetson Orin to a github account with these steps (https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account) to ensure minimal errors in the future.
+    - If you're new to GitHub, follow this guide instead: https://kbroman.org/github_tutorial/pages/first_time.html.
+
+7. For convenience, install VSCode:
+    - Download the ```.deb``` for ```Arm64``` architecture file here: https://code.visualstudio.com/download.
+    - Once installed, run ```$ sudo dpkg -i installer_file_name.deb```
+
+### Further Notes about OpenCV (libopencv-dev):
+The above installation installs multiple conflicting versions of OpenCV. We will purge all versions of OpenCV on the device by executing the following:
+
+```$ sudo apt-get purge libopencv*```
+
+Now we will install the correct OpenCV version. First call:
+
+ ```$ sudo apt list --all-versions libopencv-dev```
+
+
+Now look for any version that has 4.2.0 in it: there should be one that is called 4.2.0+dfsg-5.
+If you do not see the above version or any others that have 4.2.0 you will need to install from source. Follow this guide: https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html (DON’T FORGET to make install at the end).
+
+
+Now (if you didn’t choose to install from source) install the version 4.2.0 version you saw by executing the following: 
+
+```sudo apt install libopencv-dev=<version>```
+
+
+Our version = 4.2.0+dfsg-5
+
+Finally, confirm the correct OpenCV is installed by checking the INFO tab in jtop.
+
+
+## Setup Flight Code
 
 
 
 
 
 
-## PCB Assembly
-
- 
-  The IMU is the large red component found on the left side of the picture above. This sensor is responsible for collecting a lot of critical data including angular rate and acceleration. We put a small rubber mat underneath the IMU in order to minimize the effects of the vibrations coming from the motors. Additionally, the wired connector attached to the IMU (the black component south of the IMU in the left picture) is slightly more complicated. First we need to prepare a 4 wire ribbon cable. The cable should be stripeed and split up near the end, and we need to solder on male bullet connectors. This can be done by placing a bundle of solid solder into the connector, similar to how we did it with the power supply connector. Apply heat with the iron using the small hole found on the side of the connector and push the wire further in until it is secured.
-  
- ![Ribbon Cable](/Photos/ribbonCable.jpg)
-
-  Next it needs to be connected to the IMU using a connector. We use a ten pin connector, but the ribbon cable is only connected to it at 4 points. The image belowe shows the exact pins that should be inserted into the connector. Hot glue can be applied to the open side of the connector to keep the cables in place.
-
- ![Connector Pin Configuration](/Photos/ribbonCablePins.jpg)
-
-We then create a stack with the PCB on the bottom, the Sprocket in the middle, and the Jetson on top.
-
-![Stack](/Photos/combinedStack.jpg)
-
-The stack can be attached to the drone by screwing it onto a plate which is fastened to the frame with zipties. If this is too loose, you can add double sided adhesive to the bottom of the plate before tieing it. This method can produce slight disturbances to the IMU measurements, but for indoor use the interference is negligible. If this becomes a problem you can drill the stack directly onto the frame of the drone. Once attached, connect the PCB power supply connector to the power supply cable soldered onto the front of the frame near the "S500" text.
-
-## ESC Assembly
-4 electronic speed controls (ESC) are needed. The ESC model used is the **BL-Ctrl V2.0**. The ESCs must have motor leads (3 female bullet connectors), a battery power input (1 male and 1 female bullet connector), and a BEC input (header pin) soldered on. Each ESC must also have a unique address that can set by soldering the part of the board labeled __ADR__ on the back side. The system for setting the address is as follows
-
-Address| 1-2 |2-3|4-5
----|---|---|---
-1|Open|Open|Open
-2|Open|Closed|Open
-3|Closed|Open|Open
-4|Closed|Closed|Open
-5|Open|Open|Closed
-6|Open|Closed|Closed
-7|Closed|Open|Closed
-8|Closed|Closed|Closed
-
-![Example of Soldered ESC](/Photos/Soldered_ESC_Labeled.jpg)
-
-All four of the ESCs were tested for functionality by connecting them to DC motors and using a short Arduino program to control their speed using the serial monitor.
-
-The four ESCs can be straped onto the arms of the frame with zipties, and the motor leads should be connected the DC motors. The specific order of these motor leads can be ignored for now, as we can change them later to reverse the rotation direction if needed. Next, each pair of the bullet connectors that we soldered onto the plate of the frame earlier needs to be connected to the power inputs on the ESCs. This can be seen on the right side of the picture below. Finally, the BEC inputs of each ESC has to be connected to a pair of header pins on the PCB. They can connected using female-female jumper wires, with each header pin on the PCB corresponding to one ESC. Clean and fasten all the wires using zipties. The picture below shows the underside of an arm where the ESC is strapped. The thinner, red and brown wires are connected to the BEC input of the ESC in the left of the picture, and they are connected to the Jetson, as seen in left of the second picture below.
-
-![Wired ESC](/Photos/wired_ESC.jpg)
-![Side View of Drone Arm](/Photos/sideViewArm.jpg)
-
-At this point, you should also designate each motor a number. We started with an arbitrary motor 1, and labeled the rest by going clockwise. The specific motor that is designated as "motor 1" does not matter for now. To easily distinguish it, we wrapped the arm of motor 1 with white tape, as seen in the right of the picture above.
 
 
-## Motor Test
-The first motor test is just to check that each one of them works when connected to the Jetson and PCB. For this test, connect the __overall__ power suppy cable soldered onto the side of the metal plate of the frame to an external power supply. In this case, we use a DC power supply. Do not turn on the power supply until the drone has been connected. We power it up to about 12 volts.
-
-![Drone connected to a DC power suppy](/Photos/dcMotorTest.jpg)
-
-1. On one computer, open up 2 terminals. One will act as the 'base' and one will act as the 'rover'
-2. On the rover terminal, ssh into the Jetson using `ssh ubuntu@JETSON_IP_ADDRESS`, replacing "JETSON_IP_ADDRESS" with the actual IP address of the Jetson. The default password for this is "ubuntu"
-3. On the rover terminal clone the fdcl-uav GitHub using `git clone` followed by the URL that can be obtained by going to [this page](https://github.com/fdcl-gwu/fdcl-uav) and clicking the green button the says "Clone or download"
-4. On the base terminal, git clone the fdcl-uav GitHub
-5. On the rover terminal, `cd fdcl-uav/build/`.
-6. On the rover terminal, `sudo ./rover`. If all the motors are working, you should see:
-```
-I2C: checking motors
-I2C: motor 0 working 
-I2C: motor 1 working 
-I2C: motor 2 working 
-I2C: motor 3 working 
-```
-7. On the rover terminal, `make rover`
-8. On the base terminal, `cd` to the build folder and `make base` 
-9. On the rover terminal, find the IP address of the rover, `ip addr show`, and copy the one found under "wlan0"
-10. On the base terminal, edit the base.cfg file found in the main fdcl-uav folder. update "server_ip_addr" with the current rover IP address found in the previous step
-11. On the rover terminal, `sudo ./rover`
-12. On the base terminal in the build folder, `./base`
-13. This should open up a GUI in a seperate window. __NOTE: Do not perform this test with the propellers attached__
-
-![GUI](/Photos/guiSS.png)
-
-14. On the GUI change it from "Mode" to "Att" in the upper left
-15. Change the command mode to "Motor Test". There is a bug in the GUI, where the "Motor Test" button is labeled as "N/A" near the top right, so click that one
-16. Click the "Motor" switch
-17. Each motor on the drone should spin for about 2 seconds alternating. Make sure that motors 1 and 3 are clockwise, while 2 and 4 are counterclockwise. If a motor is spinning in the wrong direction, unplug the drone from the power supply, and swap any 2 of the ESC motor leads that are connected to a DC motor
+The IMU will have a preset BAUD rate and frequency. The BAUD rate is either 230400 or 115200, and can be determined my using the VN100 software (ask Maneesh). Or, if you're lucky, it was written on the IMU itself in permanent ink by a former FDCL lab member.
 
 ## Creating a VICON Object
 We add small balls of reflexive material onto the drone so that it can be tracked by our VICON system. This small balls can be added anywhere on the frame or even the Jetson using double sided adhesive. The only thing to keep in mind is that we actually do not want the placement of these balls to be symmetric in pattern. Having an assymmetric arrangement allows the VICON system to know the orientation of the drone at all times. Note that you can also place balls on the actual Jetson itself.
@@ -220,7 +204,9 @@ On the object line, replace "JetsonCN", or whatever is there by default, with th
 
 While you have the rover.cfg file open, it is also a good time to record the drone's weight. At this point, we can attach an external battery to the bottom of the frame using velco straps and double sided adhesive. When placing the drone on the scale, also add all the propellers, and propeller attachments that will eventually be added for the final flight. These components do not have to actually be attached to the drone yet, so they can just be placed loosely onto the scale. In the rover.cfg file, look for the `UAV` section. Under that, there should be a line that looks like `m: 1.75`. Replace this number with the measured weight of the drone in kilograms.
 
-## Flight Preparations
+# Motor Calibration
+
+# Flight Preparations
 The inside of the netted area has to be cleaned up and prepared. Make sure the entire floor is filled with the foam puzzle mats. For the very first few flights, it is usually a good idea to take extra preparations in case of a crash. This includes elevating a net above the floor by clipping it to supports outside of the netted area. The picture below shows the netting being held up in the back of the photo, as well as the elevated platform that we use to take off. After the you have confirmed that the drone is stable after the first couple of flights, this bottom net is no longer necessary.
 
 ![Netted Area](/Photos/nettedArea.jpg)
@@ -232,13 +218,7 @@ Next, the propellers have to be attached. As stated before, motors 1 and 3 are s
 Ensure that all loose wires are secured to the body of the drone using zipties or tape. 
 
 ## Flight Operation and Safety
-Flying the drone can be very dangerous, so it is important to the take some saftey precautions. Anyone operating or watching the drone should be outside of the netted area, and keep a safe distance from it during flight. Everyone should also be wearing safety goggles. Additionally, only fly the drone when the battery is __at least__ 16.2 volts.
-
-To fly, place connect the drone to the battery and place it on top of the elevated platform in the netted area. open up the GUI using the same steps as the [PCB Assembly](#pcb-assembly). You can use the buttons labeled "Idle", "Warm-up", etc. to perform basic movements of the drone. Before the drone actually flies, it is important to always use the "Warm-up" button, to check that all the propellers are working before taking off. Press the "Takeoff" button to get the drone in the air. The drone can be manually controlled using the keyboard on the host computer. Use the __WASD__ keys to move the drone around. Use the "__L__" key to make it go lower, and the "__P__" key to make it go higher. The "__M__" key kills the motors, so you should have one finger on this key at __all times__ in case you lose control on the drone. Note that this key should only be used in emergencies, and it is __not__ a suitable option to use when landing. The easiest way to operate the drone would be to use your left hand for the WASD keys, and use 3 fingers on your right hand to have access to the altitude control, and the kill keys. To properly land, make sure the drone is hovering above a flat surface within the flight area. You can either manually land by lowering the drone, or just pressing the "Land" button on the GUI.
-
-![Finished Drone](/Photos/finishedDrone.jpg)
-
-
+Flying the drone can be very dangerous, so it is important to the take some saftey precautions. Anyone operating or watching the drone should be outside of the netted area, and keep a safe distance from it during flight. Everyone should also be wearing safety goggles. Additionally, only fly the drone when the per-cell voltage of the battery is between 4.2 and 3.8 volts.
 
 # Appendix
 
