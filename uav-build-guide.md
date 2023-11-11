@@ -109,65 +109,86 @@ After everything is connected, make sure keep the area around the arms where the
 
 
 # Jetson Orin Nano Configuration
-## Setup Jetson
-Setup for Jetson Orin Nano using NVMe SSD:
+## Step 1: Setup Jetson
+See [jetson-setup.md](jetson-setup.md) in RTX-Documents.
 
-1. Follow the instructions linked here to boot the Orin from the installed SSD: https://www.youtube.com/watch?v=q4fGac-nrTI
-    - NOTE: in order to flash, you will need a linux x86 host computer running Ubuntu 20.04.
-    - If you flash it successfully, but after connecting to peripherals (monitor, keyboard, and mouse) you are prompted with a UEFI shell, just reflash the jetson.
-    - For a generic SD card follow the instructions here: https://developer.nvidia.com/embedded/learn/get-started-jetson-orin-nano-devkit#write
+After the jetson is configured, record it's IP Address. This can be found my connecting a monitor to the Jetson, and going to WIFI settings. Then seelct the small "Settings" wheel next to the connected WIFI network. 
 
-2. Install JTOP to easily monitor the Jetson, follow the instructions here: https://jetsonhacks.com/2023/02/07/jtop-the-ultimate-tool-for-monitoring-nvidia-jetson-devices/.
-
-3. Next, install ROS-Noetic (steps found here: http://wiki.ros.org/noetic/Installation/Ubuntu)
-4. Install dependencies:
-    <ol type="a">
-      <li>catkin tools: <code>$ sudo apt-get install python3-catkin-tools python3-vcstool python3-osrf-pycommon </code> </li>
-      <li>Ceres Solver (system dependencies): <code>$ sudo apt-get install libglew-dev libyaml-cpp-dev</code> </li>
-      <li>Ceres Solver (dependencies): <code>$ sudo apt-get install libblas-dev liblapack-dev libsuitesparse-dev </code> </li>
-      <li>OpenVins: <code>$ sudo apt-get install libeigen3-dev libboost-all-dev libceres-dev </code> </li>
-      <li>ROS Gazebo: <code>$ sudo apt-get install ros-noetic-gazebo-ros-pkgs ros-noetic-gazebo-ros-control </code> </li>
-    </ol>
-5. Other useful packages:
-
-    <ol type="a">
-      <li><code>$ sudo apt-get install ros-noetic-pcl-ros </code> </li>
-      <li><code>$ sudo apt-get install ros-noetic-cv-bridge</code> </li>
-    </ol>
-6. Make sure to associate the Jetson Orin to a github account with these steps (https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account) to ensure minimal errors in the future.
-    - If you're new to GitHub, follow this guide instead: https://kbroman.org/github_tutorial/pages/first_time.html.
-
-7. For convenience, install VSCode:
-    - Download the ```.deb``` for ```Arm64``` architecture file here: https://code.visualstudio.com/download.
-    - Once installed, run ```$ sudo dpkg -i installer_file_name.deb```
-
-### Further Notes about OpenCV (libopencv-dev):
-The above installation installs multiple conflicting versions of OpenCV. We will purge all versions of OpenCV on the device by executing the following:
-
-```$ sudo apt-get purge libopencv*```
-
-Now we will install the correct OpenCV version. First call:
-
- ```$ sudo apt list --all-versions libopencv-dev```
+  - For example, when connected to Basestation on the 2nd Floor of SEH, you should see an IP address that looks like 192.168.10.XX. This is the Jetson's IP address which we will use to ssh into.
 
 
-Now look for any version that has 4.2.0 in it: there should be one that is called 4.2.0+dfsg-5.
-If you do not see the above version or any others that have 4.2.0 you will need to install from source. Follow this guide: https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html (DON’T FORGET to make install at the end).
+
+## Step 2: Setup Flight Code
+You will need two computers for this part: the Jetson Orin Nano (ROVER), and either a Linux or Mac computer (BASE). On the BASE computer, open two terminals:
+
+### Terminal 1 (ROVER)
+1. type ```$ ssh fdcl@192.168.10.34``` into a terminal, replacing the ```192.168.10.34``` with your Jetson's IP address and ```fdcl``` with the account username associated with your Jetson. Enter your Jetson's password.
+2. Clone and build the flight code:
+    1. Clone the fdcl-uav_rtx repo: ```$ git clone https://github.com/fdcl-gwu/fdcl-uav_rtx.git```. You'll need to be logged into github for this.
+    2. Change into directory: ```$ cd fdcl-uav_rtx```
+    3. Switch to quad_x_race branch: ```$ git checkout quad_x_race```
+    4. The VRPN library is empty when you clone the flight code. To fix this, go into fdcl-uav_rtx/libraries and run ```$ git clone git@github.com:fdcl-gwu/vrpn.git```
+        - If /libraries/vrpn/submodules/hidapi is empty, enter the /libraries/vrpn/submodules directory and run ```$ git clone https://github.com/signal11/hidapi.git```
+    5. Go back to fdcl-uav_rtx/ directory and run ```$ . setup_uav.sh```
+    6. When prompted, uncomment pc_linux in the 4 files
+    7. From /build directory, run ```$ cmake ../ ```
+    8. Finally, run ```$ make rover```
+
+### Terinal 2 (Base)
+2. Clone and Build Flight Code:
+    1. Clone the fdcl-uav_rtx repo: ```$ git clone https://github.com/fdcl-gwu/fdcl-uav_rtx.git```. You'll need to be logged into github for this.
+    2. Change into directory: ```$ cd fdcl-uav_rtx```
+    3. Switch to quad_x_race branch: ```$ git checkout quad_x_race```
+    4. The VRPN library is empty when you clone the flight code. To fix this, go into fdcl-uav_rtx/libraries and run ```$ git clone git@github.com:fdcl-gwu/vrpn.git```
+        - If /libraries/vrpn/submodules/hidapi is empty, enter the /libraries/vrpn/submodules directory and run ```$ git clone https://github.com/signal11/hidapi.git```
+    5. Go back to fdcl-uav_rtx/ directory and run ```$ sh setup_uav.sh```
+          - On Linux, replace ```sh``` with ```.```
+    6. When prompted, uncomment pc_linux in the 4 files
+    7. From /build directory, run ```$ cmake ../ ```
+    8. Finally, run ```$ make base```
+
+Documentation reference: https://fdcl-gwu.github.io/fdcl-uav/
+
+## Step 3: Configure Flight Code
+Make the following code changes:
+
+### Terminal 1 (ROVER)
+1. src/fdcl_control.cpp
+    - in ```fdcl::control::load_config(void)```, change ```fM_to_forces``` depending on where the motors are with respect to the body 1 axis (see "Geometric Control and Estimation for Autonomous UAVs in Ocean Environments
+", Appendix B).
+2. src/fdc_ekf.cpp
+    - in ```fdcl::ekf::init(void)```, change ```R_bi``` and ```R_bi``` depending on whether using X or + shape.
+3. rover.cfg
+    - IMU:port: ttyTHS0 or ttyTHS2
+    - IMU:baud_rate: either 230400 or 115200
+    - WIFI:server_ip_addr: IP Address of Jetson
+    - I2C:port: NOT USED
+    - VICON:rover_quad: "NAME_OF_VICON_OBEJCT@192.168.10.1"
+    - UAV:m_quad: mass of quadcopter
+    - MOTOR:calib: coefficients from Motor calibration section 
+4. include/common_types.hpp
+    - Uncomment applicable DEFINE statements within first 100 lines of the file. We are using PWM escs, so uncomment ```#define PWM_ESC```
+5. JHPWMPCA9685.h: 
+    - ```PCA9685(int address=0x43)```: replace 0x43 with board address (default=0x40).
+6. JHPWMPCA9685.c: 
+    - kI2CBus = #: The I2C bus being used on the Jetson (/dev/i2c-#_
+        - Pins 3,5 use I2C Bus 7 (to check, run ```$ sudo i2cdetect -y -r 7```)
 
 
-Now (if you didn’t choose to install from source) install the version 4.2.0 version you saw by executing the following: 
+### Terminal 2 (BASE)
+The base is used primarily for displaying data collected from the rover. Thus, the code changes aren't as crucial on the base for right now.
+1. base.cfg
+    - WIFI: server_ip_addr: IP Address of Jetson
+    - VICON:object: "NAME_OF_VICON_OBEJCT@192.168.10.1"
+2. Ideally: same changes as ROVER
 
-```sudo apt install libopencv-dev=<version>```
+## Step 4: Run Flight Code
+Before plugging in the abttery for the first time, __double check that all positive and ground wires are wired correctly!!__
 
-
-Our version = 4.2.0+dfsg-5
-
-Finally, confirm the correct OpenCV is installed by checking the INFO tab in jtop.
-
-
-## Setup Flight Code
-
-
+### Terminal 1 (ROVER)
+1. Run ```sudo ./rover```
+### Terminal 2 (BASE)
+1. Run ```./base```
 
 
 
@@ -238,3 +259,5 @@ After all the soldering has been finished, use a cotton swab with a cleaning sol
 
 ## TODOs: 
 - add WIFI antennas
+- tuning rover.cfg
+- add PCA9685 to rover.cfg file, and rename
