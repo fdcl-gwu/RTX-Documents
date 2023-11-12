@@ -22,6 +22,7 @@
     <ol type="a">
       <li><code>$ sudo apt-get install ros-noetic-pcl-ros </code> </li>
       <li><code>$ sudo apt-get install ros-noetic-cv-bridge</code> </li>
+      <li><code>$ sudo apt-get install libi2c-dev</code> </li>
     </ol>
 6. Make sure to associate the Jetson Orin to a github account with these steps (https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account) to ensure minimal errors in the future.
     - If you're new to GitHub, follow this guide instead: https://kbroman.org/github_tutorial/pages/first_time.html.

@@ -174,16 +174,19 @@ Make the following code changes:
     - kI2CBus = #: The I2C bus being used on the Jetson (/dev/i2c-#_
         - Pins 3,5 use I2C Bus 7 (to check, run ```$ sudo i2cdetect -y -r 7```)
 
-
 ### Terminal 2 (BASE)
 The base is used primarily for displaying data collected from the rover. Thus, the code changes aren't as crucial on the base for right now.
 1. base.cfg
     - WIFI: server_ip_addr: IP Address of Jetson
     - VICON:object: "NAME_OF_VICON_OBEJCT@192.168.10.1"
-2. Ideally: same changes as ROVER
+2. Extra Changes: same changes as ROVER
+
+__After making code changes, remember to run ```$make rover/base``` again__
 
 ## Step 4: Run Flight Code
 Before plugging in the abttery for the first time, __double check that all positive and ground wires are wired correctly!!__
+
+
 
 ### Terminal 1 (ROVER)
 1. Run ```sudo ./rover```
@@ -197,14 +200,48 @@ Before plugging in the abttery for the first time, __double check that all posit
 
 The IMU will have a preset BAUD rate and frequency. The BAUD rate is either 230400 or 115200, and can be determined my using the VN100 software (ask Maneesh). Or, if you're lucky, it was written on the IMU itself in permanent ink by a former FDCL lab member.
 
+TODO: explain more about X vs +
+
 ## Creating a VICON Object
 We add small balls of reflexive material onto the drone so that it can be tracked by our VICON system. This small balls can be added anywhere on the frame or even the Jetson using double sided adhesive. The only thing to keep in mind is that we actually do not want the placement of these balls to be symmetric in pattern. Having an assymmetric arrangement allows the VICON system to know the orientation of the drone at all times. Note that you can also place balls on the actual Jetson itself.
 
-![Reflexive Ball Arrangement](/Photos/viconBalls.jpg)
 
-Next, bring the drone into the netted area. The orientaion of the VICON system is marked by the "T" shape of black tape on the floor. It is important to align axis 1 (the arms with motors 1 and 3) of the drone with axis 1 of the VICON system.
+Next, bring the drone into the netted area. The orientaion of the VICON system is marked by the "T" shape of black tape on the floor. It is important to align the body and vicon coordinate systems correctly:
 
-![Drone Orientation](/Photos/viconOrientation.jpg)
+VICON Frame:
+```  
+      Direction of SEH Elevators
+
+               V2			       
+                |
+                |
+               ___  V1      Direction of Lab workbench
+```
+
+### + Configuration
+If using + configuration, align body axis 1 (the direction of IMU x-axis) of the drone with axis 1 of the VICON system.
+
+```  
+For + config:   R2			       
+             W1 X R1 (b1,i1,v1)
+                W2
+```
+
+### X Configuration
+If using X configuration, the NEW body 1 axis will be between arms 1 and 2. Align this new b1 axis with axis 1 of the VICON system. Here, arm 1 is the arm with motor 1 on it. Then, arm 2 is clockwise from arm 1. See Coordinate Frame Documentation (TODO - link) for details.
+
+Placement Diagram for x
+```  
+For X config: R2    R1
+                 X    --> New b1 direction
+		      W1    W2
+```
+
+
+
+
+
+
 
 Open up the GUI using the same method in steps 11 and 12 in the under the [Motor Test](#motor-test) section. Pay attention to the data labeled "__YPR__" (yaw, pitch, roll). For now we only have to worry about pitch and roll, so ignore the first row of data. Because our IMU was mounted upside down, we want the pitch to be 0 and the roll to be -180. Add small objects such as screws underneath the legs of the drone until these numbers match the figures we want fairly accurately. At this point, we are ready to create the VICON object.
 1. Go to the computer with the VICON software installed. Turn on the VICON server 
@@ -261,3 +298,7 @@ After all the soldering has been finished, use a cotton swab with a cleaning sol
 - add WIFI antennas
 - tuning rover.cfg
 - add PCA9685 to rover.cfg file, and rename
+
+
+## IMU BAUD rate vs Frequency:
+The BAUD rate is more specific to communication protocols, indicating how fast data is transmitted over a communication channel. It is the number of signal or symbol changes that occur per second in a communication channel (i.e. it's a measure of the rate of information transfer). Frequency, in the context of an IMU or sensor, refers to the rate at which the device samples or updates its measurements.
