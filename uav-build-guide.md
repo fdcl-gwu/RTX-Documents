@@ -40,7 +40,7 @@ Lastly, the thin black and white braided wire should already be attached to the 
 ## Step 3: Attach IMU
 When attaching the IMU, placement is very important. Before doing anything, put a small rubber mat underneath the IMU in order to dampen the effects of the vibrations coming from the motors.
 
-On the IMU are three axes - x,y,z - and they correspond to the directions of the IMU's coordinate system. When mounting, place the IMU __UPSIDE DOWN__ at the center of mass of the frame. Then, rotate the IMU such that the x-axis of the IMU is aligned with one of the arms of the frame (in the code, this arm will then be refered to as body axis 1 (b1, or arm1)). If done correctly, when looking at the underside of the frame, you should see the red part of the IMU with the x- axis arrow pointing along arm 1 of the frame.
+On the IMU are three axes - x,y,z - and they correspond to the directions of the IMU's coordinate system. When mounting, place the IMU __UPSIDE DOWN__ at the center of mass of the frame. Then, rotate the IMU such that the x-axis of the IMU is aligned with one of the arms of the frame (in the code, this arm will then be refered to as body axis 1 (b1, or arm1)). If done correctly, when looking at the underside of the frame, you should see the red part of the IMU with the x- axis arrow pointing along arm 1 of the frame. MAKE SURE THE IMU IS AS LEVEL AS POSSIBLE.
 
 IMG
 
@@ -112,9 +112,7 @@ After everything is connected, make sure keep the area around the arms where the
 ## Step 1: Setup Jetson
 See [jetson-setup.md](jetson-setup.md) in RTX-Documents.
 
-After the jetson is configured, record it's IP Address. This can be found my connecting a monitor to the Jetson, and going to WIFI settings. Then seelct the small "Settings" wheel next to the connected WIFI network. 
-
-  - For example, when connected to Basestation on the 2nd Floor of SEH, you should see an IP address that looks like 192.168.10.XX. This is the Jetson's IP address which we will use to ssh into.
+After the jetson is configured, record it's IP Address. This can be found my connecting a monitor to the Jetson, and going to WIFI settings. Then select the small "Settings" wheel next to the connected WIFI network. The IP Address of the Jetson is the number under "Detault Route", or "DNS".
 
 
 
@@ -164,15 +162,19 @@ Make the following code changes:
     - WIFI:server_ip_addr: IP Address of Jetson
     - I2C:port: NOT USED
     - VICON:rover_quad: "NAME_OF_VICON_OBEJCT@192.168.10.1"
+      - _Unless you already made a vicon object, set VICON:on to 0 for now. We'll update this in a later step._
     - UAV:m_quad: mass of quadcopter
     - MOTOR:calib: coefficients from Motor calibration section 
 4. include/common_types.hpp
     - Uncomment applicable DEFINE statements within first 100 lines of the file. We are using PWM escs, so uncomment ```#define PWM_ESC```
-5. JHPWMPCA9685.h: 
+5. include/JHPWMPCA9685.h: 
     - ```PCA9685(int address=0x43)```: replace 0x43 with board address (default=0x40).
-6. JHPWMPCA9685.c: 
+6. src/JHPWMPCA9685.c: 
     - kI2CBus = #: The I2C bus being used on the Jetson (/dev/i2c-#_
         - Pins 3,5 use I2C Bus 7 (to check, run ```$ sudo i2cdetect -y -r 7```)
+    - in ```int thr_val = map(thr[motor_index],0,250,204,409);```, change the numbers `204` and `409` to be `234` and `441` respectively.
+    - in ```fdcl::i2c::open(void)```, change the `204` in ```pca9685->setPWM(i,0, 204)``` to be ```234```. For more details, see docs/pwm.md in fdcl-uav_rtx.
+    - TODO: why is PWM range weird?
 
 ### Terminal 2 (BASE)
 The base is used primarily for displaying data collected from the rover. Thus, the code changes aren't as crucial on the base for right now.
@@ -181,10 +183,10 @@ The base is used primarily for displaying data collected from the rover. Thus, t
     - VICON:object: "NAME_OF_VICON_OBEJCT@192.168.10.1"
 2. Extra Changes: same changes as ROVER
 
-__After making code changes, remember to run ```$make rover/base``` again__
+__After making code changes, remember to run ```$make rover``` or ```$ make base``` respectively__
 
 ## Step 4: Run Flight Code
-Before plugging in the abttery for the first time, __double check that all positive and ground wires are wired correctly!!__
+Before plugging in the battery for the first time, __double check that all positive and ground wires are wired correctly!!__
 
 
 
@@ -193,16 +195,25 @@ Before plugging in the abttery for the first time, __double check that all posit
 ### Terminal 2 (BASE)
 1. Run ```./base```
 
+If everything worked correctly, you should see a GUI appear that shows incoming data from the rover.
 
+ ![GUI](/images/GUI.jpeg)
 
+## Troubleshooting
+### ```vn:timeout``` error: 
+This means the flight code cannot detect or read data from the IMU. Check the BAUD rate and port in rover.cfg, and check that UART RX and TX are wired correctly. Remember, IMU RX should go to Jetson TX, and IMU TX should go to Jetson RX. If this doesn't work, you may need to check the IMU calibration using the VectorNav Control Center software.
 
+### ```PCA9685 Write/Read Byte Error```:
+This means that the PWM converter board cannot reached. TODO
 
+TODO: Motor beep pattern, and changing PWM range in fdcl_i2c.cpp
 
-The IMU will have a preset BAUD rate and frequency. The BAUD rate is either 230400 or 115200, and can be determined my using the VN100 software (ask Maneesh). Or, if you're lucky, it was written on the IMU itself in permanent ink by a former FDCL lab member.
+### No GUI data: 
+This means the Jetson IP Address isn't correct in BOTH the base computer (base.cfg) and rover compter (rover.cfg). Alternatively, check that BOTH the base computer and rover computer are connected to the same WIFI network.
 
 TODO: explain more about X vs +
 
-## Creating a VICON Object
+# Creating a VICON Object
 We add small balls of reflexive material onto the drone so that it can be tracked by our VICON system. This small balls can be added anywhere on the frame or even the Jetson using double sided adhesive. The only thing to keep in mind is that we actually do not want the placement of these balls to be symmetric in pattern. Having an assymmetric arrangement allows the VICON system to know the orientation of the drone at all times. Note that you can also place balls on the actual Jetson itself.
 
 
@@ -230,35 +241,28 @@ For + config:   R2
 ### X Configuration
 If using X configuration, the NEW body 1 axis will be between arms 1 and 2. Align this new b1 axis with axis 1 of the VICON system. Here, arm 1 is the arm with motor 1 on it. Then, arm 2 is clockwise from arm 1. See Coordinate Frame Documentation (TODO - link) for details.
 
-Placement Diagram for x
 ```  
 For X config: R2    R1
                  X    --> New b1 direction
 		      W1    W2
 ```
 
-
-
-
-
-
-
-Open up the GUI using the same method in steps 11 and 12 in the under the [Motor Test](#motor-test) section. Pay attention to the data labeled "__YPR__" (yaw, pitch, roll). For now we only have to worry about pitch and roll, so ignore the first row of data. Because our IMU was mounted upside down, we want the pitch to be 0 and the roll to be -180. Add small objects such as screws underneath the legs of the drone until these numbers match the figures we want fairly accurately. At this point, we are ready to create the VICON object.
+Open up the GUI (from Step 4: Run Flight Code). Pay attention to the data labeled "__YPR__" (yaw, pitch, roll). For now we only have to worry about pitch and roll, so ignore the first row of data. Because our IMU was mounted upside down, we want the pitch to be 0 and the roll to be -180. Add small objects such as screws underneath the legs of the drone until these numbers match the figures we want fairly accurately. At this point, we are ready to create the VICON object.
 1. Go to the computer with the VICON software installed. Turn on the VICON server 
 2. Open the VICON software and click on the tab labeled "OBJECTS"
 3. Uncheck any boxes that have already been selected
 4. You should see the same number of reflexive balls on the computer screen as you have attached to the drone. If some are missing, move them to different areas of the frame until all can be seen on the software
-5. In the bottom left of the screen next to "Create Object", give the drone a name and press "CREATE"
+5. In the bottom left of the screen next to "Create Object", give the drone a name, and press "CREATE"
 6. Select your new drone object under the onjects tab. If you move the drone around in the net, you should see corresponding movement on the screen
 7. On the rover terminal, open the rover.cfg file found in the fdcl-uav. Search for a section that looks like:
 ```
  VICON:
   on: 1
-  object: "JetsonCN@192.168.10.1"
+  object: "NAME_OF_VICON_OBEJCT@192.168.10.1"
   board: "board@192.168.10.1"
   payload: "Jetson@192.168.10.1"
 ```
-On the object line, replace "JetsonCN", or whatever is there by default, with the name of the object you just created in the VICON software.
+On the object line, replace "NAME_OF_VICON_OBEJCT", or whatever is there by default, with the name of the object you just created in the VICON software.
 
 While you have the rover.cfg file open, it is also a good time to record the drone's weight. At this point, we can attach an external battery to the bottom of the frame using velco straps and double sided adhesive. When placing the drone on the scale, also add all the propellers, and propeller attachments that will eventually be added for the final flight. These components do not have to actually be attached to the drone yet, so they can just be placed loosely onto the scale. In the rover.cfg file, look for the `UAV` section. Under that, there should be a line that looks like `m: 1.75`. Replace this number with the measured weight of the drone in kilograms.
 
@@ -298,6 +302,8 @@ After all the soldering has been finished, use a cotton swab with a cleaning sol
 - add WIFI antennas
 - tuning rover.cfg
 - add PCA9685 to rover.cfg file, and rename
+- motor calibration
+- imu configuration/troubleshooting
 
 
 ## IMU BAUD rate vs Frequency:
