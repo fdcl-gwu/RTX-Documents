@@ -151,11 +151,11 @@ Documentation reference: https://fdcl-gwu.github.io/fdcl-uav/
 Make the following code changes:
 
 ### Terminal 1 (ROVER)
+For explanation of Steps 1,2 below, see ["X vs + Details: ](#X-vs-+-Details).
 1. src/fdcl_control.cpp
-    - in ```fdcl::control::load_config(void)```, change ```fM_to_forces``` depending on where the motors are with respect to the body 1 axis (see "Geometric Control and Estimation for Autonomous UAVs in Ocean Environments
-", Appendix B).
+    - in ```fdcl::control::load_config(void)```, change ```fM_to_forces``` depending on where the motors are with respect to the body 1 axis.
 2. src/fdc_ekf.cpp
-    - in ```fdcl::ekf::init(void)```, change ```R_bi``` and ```R_bi``` depending on whether using X or + shape.
+    - in ```fdcl::ekf::init(void)```, change ```R_bi``` and ```R_mb``` depending on whether using X or + shape.
 3. rover.cfg
     - IMU:port: ttyTHS0 or ttyTHS2
     - IMU:baud_rate: either 230400 or 115200
@@ -211,8 +211,6 @@ TODO: Motor beep pattern, and changing PWM range in fdcl_i2c.cpp
 ### No GUI data: 
 This means the Jetson IP Address isn't correct in BOTH the base computer (base.cfg) and rover compter (rover.cfg). Alternatively, check that BOTH the base computer and rover computer are connected to the same WIFI network.
 
-TODO: explain more about X vs +
-
 # Creating a VICON Object
 We add small balls of reflexive material onto the drone so that it can be tracked by our VICON system. This small balls can be added anywhere on the frame or even the Jetson using double sided adhesive. The only thing to keep in mind is that we actually do not want the placement of these balls to be symmetric in pattern. Having an assymmetric arrangement allows the VICON system to know the orientation of the drone at all times. Note that you can also place balls on the actual Jetson itself.
 
@@ -228,23 +226,45 @@ VICON Frame:
                 |
                ___  V1      Direction of Lab workbench
 ```
+_In the following diagrams, the above VICON orientation is assumed. i.e. vicon axis v1 points right,  and v2 points up._
 
-### + Configuration
+### + Configuration (Default)
 If using + configuration, align body axis 1 (the direction of IMU x-axis) of the drone with axis 1 of the VICON system.
 
 ```  
-For + config:   R2			       
-             W1 X R1 (b1,i1,v1)
-                W2
+For + config:   A4      
+             A3 X A1
+                A2
+
+A1-4: denotes arm 1-4 respectively.
+
+b1: aligned with A1
+b2: aligned with A2
+b3: into page (Right Hand Rule)
+
+i1: aligned with A1
+i2: aligned with A4 (we mounted IMU upside down)
+i3: out of page
 ```
 
 ### X Configuration
 If using X configuration, the NEW body 1 axis will be between arms 1 and 2. Align this new b1 axis with axis 1 of the VICON system. Here, arm 1 is the arm with motor 1 on it. Then, arm 2 is clockwise from arm 1. See Coordinate Frame Documentation (TODO - link) for details.
 
 ```  
-For X config: R2    R1
+For X config: 
+              A4    A1
                  X    --> New b1 direction
-		      W1    W2
+		          A3    A2
+
+A1-4: denotes arm 1-4 respectively.
+
+b1: new b1
+b2: straight down
+b3: into page (Right Hand Rule)
+
+i1: aligned with new b1
+i2: straight up (we mounted IMU upside down)
+i3: out of page
 ```
 
 Open up the GUI (from Step 4: Run Flight Code). Pay attention to the data labeled "__YPR__" (yaw, pitch, roll). For now we only have to worry about pitch and roll, so ignore the first row of data. Because our IMU was mounted upside down, we want the pitch to be 0 and the roll to be -180. Add small objects such as screws underneath the legs of the drone until these numbers match the figures we want fairly accurately. At this point, we are ready to create the VICON object.
@@ -265,6 +285,49 @@ Open up the GUI (from Step 4: Run Flight Code). Pay attention to the data labele
 On the object line, replace "NAME_OF_VICON_OBEJCT", or whatever is there by default, with the name of the object you just created in the VICON software.
 
 While you have the rover.cfg file open, it is also a good time to record the drone's weight. At this point, we can attach an external battery to the bottom of the frame using velco straps and double sided adhesive. When placing the drone on the scale, also add all the propellers, and propeller attachments that will eventually be added for the final flight. These components do not have to actually be attached to the drone yet, so they can just be placed loosely onto the scale. In the rover.cfg file, look for the `UAV` section. Under that, there should be a line that looks like `m: 1.75`. Replace this number with the measured weight of the drone in kilograms.
+
+### X vs + Details
+After creating the VICON object and updating it's name in the configuration files, when you rerun the flight code, the R matrix should display the __identity matrix__ (3x3 matrix, 1's on diagonal) when b1 is aligned with v2. This is what we will call "Flight Orientation". The controller will try to achieve this orientation (such that R=I) when starting/hovering.
+
+Flight Orientation for + Configuration (such that R=I):
+
+```  
+           A1
+         A4 X A2
+           A3
+
+b1: up
+b2: right
+b3: into page (Right Hand Rule)
+
+i1: up
+i2: left
+i3: out of page
+```
+
+If you are using the X Configuration, we want R=I when the new body 1 axis (between A1 and A2) is aligned with v2. To do this, you'll need to change three things. 
+1. Update fM_to_forces: TODO
+2. Update R_bi: TODO
+3. Update R_mb: TODO
+
+Flight Orientation for X Configuration (such that R=I):
+
+```  
+              A1    A2
+                 X    
+		          A4    A3
+
+b1: up
+b2: right
+b3: into page (Right Hand Rule)
+
+i1: aligned with A1
+i2:aligned with A4
+i3: out of page
+```
+
+See "Geometric Control and Estimation for Autonomous UAVs in Ocean Environments
+", Appendix B for details.
 
 # Motor Calibration
 
@@ -304,6 +367,8 @@ After all the soldering has been finished, use a cotton swab with a cleaning sol
 - add PCA9685 to rover.cfg file, and rename
 - motor calibration
 - imu configuration/troubleshooting
+- ESC inactivity beep
+- gains from non_svo_flight_code to rtx
 
 
 ## IMU BAUD rate vs Frequency:
