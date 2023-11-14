@@ -200,16 +200,19 @@ If everything worked correctly, you should see a GUI appear that shows incoming 
  ![GUI](/images/GUI.jpeg)
 
 ## Troubleshooting
-### ```vn:timeout``` error: 
+#### ```vn:timeout``` error: 
 This means the flight code cannot detect or read data from the IMU. Check the BAUD rate and port in rover.cfg, and check that UART RX and TX are wired correctly. Remember, IMU RX should go to Jetson TX, and IMU TX should go to Jetson RX. If this doesn't work, you may need to check the IMU calibration using the VectorNav Control Center software.
 
-### ```PCA9685 Write/Read Byte Error```:
+#### ```PCA9685 Write/Read Byte Error```:
 This means that the PWM converter board cannot reached. TODO
 
 TODO: Motor beep pattern, and changing PWM range in fdcl_i2c.cpp
 
 ### No GUI data: 
 This means the Jetson IP Address isn't correct in BOTH the base computer (base.cfg) and rover compter (rover.cfg). Alternatively, check that BOTH the base computer and rover computer are connected to the same WIFI network.
+
+# Motor Calibration
+__MAKE SURE PROPELLERS ARE OFF BEFORE POWERING DRONE__
 
 # Creating a VICON Object
 We add small balls of reflexive material onto the drone so that it can be tracked by our VICON system. This small balls can be added anywhere on the frame or even the Jetson using double sided adhesive. The only thing to keep in mind is that we actually do not want the placement of these balls to be symmetric in pattern. Having an assymmetric arrangement allows the VICON system to know the orientation of the drone at all times. Note that you can also place balls on the actual Jetson itself.
@@ -268,7 +271,7 @@ i3: out of page
 ```
 
 Open up the GUI (from Step 4: Run Flight Code). Pay attention to the data labeled "__YPR__" (yaw, pitch, roll). For now we only have to worry about pitch and roll, so ignore the first row of data. Because our IMU was mounted upside down, we want the pitch to be 0 and the roll to be -180. Add small objects such as screws underneath the legs of the drone until these numbers match the figures we want fairly accurately. At this point, we are ready to create the VICON object.
-1. Go to the computer with the VICON software installed. Turn on the VICON server 
+1. Go to the computer with the VICON software installed (Grey Dell Laptop). Turn on the VICON server 
 2. Open the VICON software and click on the tab labeled "OBJECTS"
 3. Uncheck any boxes that have already been selected
 4. You should see the same number of reflexive balls on the computer screen as you have attached to the drone. If some are missing, move them to different areas of the frame until all can be seen on the software
@@ -329,7 +332,25 @@ i3: out of page
 See "Geometric Control and Estimation for Autonomous UAVs in Ocean Environments
 ", Appendix B for details.
 
-# Motor Calibration
+# Attitude Testing and PID Tuning
+## Attitude Testing
+1. Determine motor direction (use warmup on gui)
+    - Make sure that motors 1 and 3 are clockwise, while 2 and 4 are counterclockwise (motor 1 is on arm 1, motor 2 on arm 2, etc.) If a motor is spinning in the wrong direction, unplug the drone from the power supply, and swap any 2 of the ESC motor leads that are connected to a DC motor.
+2. Attach propellers to motors:
+    - As stated before, motors 1 and 3 are spinning clockwise, which is important because the propellers are different depending on the direction you want them to spin. The propeller will spin towards the side that the elevated part of the blade is on. In other words, the leading edge travels in the direction of the rotation. Two clockwise propellers should be attached to motors 1 and 3, while two counterclockwise propellers should be attached to motors 2 and 4. 
+    - IMG
+    - Use screws included with the motor. If the screws are too long, __they could pierce the windings of the motor__.
+3. Place UAV of spherical joint stand (2nd Floor Lab). Secure the stand to the table with the large clamp.
+4. Turn on VICON, and run flight code.
+5. Once on the GUI screen, select the "Attitude". 
+    - This will only use the attitude controller, and not the position controller. This is important because we don't want the position controller trying to correct the drone's position (since it's attached at a fixed position in 3D space). We are only interested in how well the drone can hover (i.e. correct and maintain its attitude).
+5. Turn the motor on, the select "Warmup", and then "Takeoff". This will attempt to align the UAV such that the R matrix is the identity (i.e. to hover).
+
+## Troubleshooting
+Frame Transforms (R_bi, R_mb, fM_to_forces): TODO
+
+## PID Tuning
+PID Tune: TODO
 
 # Flight Preparations
 The inside of the netted area has to be cleaned up and prepared. Make sure the entire floor is filled with the foam puzzle mats. For the very first few flights, it is usually a good idea to take extra preparations in case of a crash. This includes elevating a net above the floor by clipping it to supports outside of the netted area. The picture below shows the netting being held up in the back of the photo, as well as the elevated platform that we use to take off. After the you have confirmed that the drone is stable after the first couple of flights, this bottom net is no longer necessary.
