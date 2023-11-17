@@ -216,12 +216,17 @@ For details, refer to "Operation manual for BLHeli_32 ARM" which can be found on
 ### No GUI data: 
 This means the Jetson IP Address isn't correct in BOTH the base computer (base.cfg) and rover compter (rover.cfg). Alternatively, check that BOTH the base computer and rover computer are connected to the same WIFI network.
 
+### Unable to SSH into Jetson:
+If you are unable to ssh into the Jetson, first check that the base and rover are connected to the same wifi network. After that, plug the Jetson into a monitor. If it doesn't automatically show the connected wifi status when the screen loads, then rework or reset wifi settings. We need the jetson to connect to wifi automatically in order to be able to ssh into it.
+
+If this hasn't fixed the issue, it could be that the antenna is mounted in an orientation that doesn't allow much signal to reach it. To remove the antennas from the Orin Nano developer board, unscrew the four screws on the top of the Jetson (the side with the fan) to remove the plastic rim. Then carefully "pop" out the rectangular wifi antennas from the plastic rim. Remount these outside the quadcopter so they're more exposed, ideally having one mounted horizontally and the other mounted vertically.
+
 # Motor Calibration
 MAE TODO
 
 __MAKE SURE PROPELLERS ARE OFF BEFORE POWERING DRONE__
-docs/pwm.md in fdcl-uav_rtx
-and changing PWM range in fdcl_i2c.cpp
+
+See docs/pwm.md in fdcl-uav_rtx for changing PWM range in fdcl_i2c.cpp
 
 # Creating a VICON Object
 For Coordinate Frame Documentation, see (TODO - link).)
@@ -384,21 +389,58 @@ In "Geometric Control and Estimation for Autonomous UAVs in Ocean Environments":
 5. Turn the motor on, the select "Warmup", and then "Takeoff". This will attempt to align the UAV such that the R matrix is the identity (i.e. to hover).
 
 ## Troubleshooting
-### Frame Transforms (R_bi, R_mb, fM_to_forces):
+### Out-of-control behavior on stand:
 It could be that the drone will jerk around out of control when placed on the stand. This means that the matrices _R_bi_, _R_mb_, or _fM_to_forces_ are incorrect given the layout of the quadcopter. See [X Configuration](#-X-Configuration) for details about frame transforms.
 
 
 ## PID Tuning
-PID Tune: TODO
+If the quadcopter is able to hover, but is not reaching maintaining the correct orientation, then we need to adjust the controller gains through PID tuning: In rover.cfg, find the section that looks like:
+
+```
+Control:
+ use_decoupled: 0
+ kR_attitude: 1.5, 1.5, 0.8
+ kW_attitude: 0.5, 0.5, 0.2
+ kX: 9.0, 9.0, 12.0
+ kV: 9.0, 9.0, 10.0
+ kR: 0.8, 0.8, 0.60
+ kW: 0.25, 0.25, 0.1
+ gx: 1.0
+ gy: 1.0
+ gz: 1.0
+ c_tf: 0.0135
+ l: 0.23
+ f_total: 10.0
+Integral:
+ use_integral: 1
+ kIX: 4.0
+ ki: 0.01
+ c1: 1.0
+ kIR: 0.015
+ kIR_attitude: 0.5
+ kI: 0.01
+ kyI: 0.02
+ c2_attitude: 1.0
+ c2: 1.0
+ c3: 1.0
+```
+
+The gains we'll be adjusting are:
+
+|             | P-term      | D-term      | I-term        |
+| :---        | :---        |    :----:   |          ---: |
+| Attitude    | kR          | kW          | kIR           |
+| Position    | kX          | kV          | kIX           |
+
+__NOTE: If the quadcopter is on the spherical joint stand, use kR_attitude and kW_attitude instead of kR and kW.__
+
+These gains are used in src/fdcl_control.cpp to change the accuracy of the controller, and must be tuned such that the quadcopter can hover stabily before attempting a free flight. Read up about PID tuning if this is unfamiliar to you.
 
 # Flight Preparations
 The inside of the netted area has to be cleaned up and prepared. Make sure the entire floor is filled with the foam puzzle mats. For the very first few flights, it is usually a good idea to take extra preparations in case of a crash. This includes elevating a net above the floor by clipping it to supports outside of the netted area. The picture below shows the netting being held up in the back of the photo, as well as the elevated platform that we use to take off. After the you have confirmed that the drone is stable after the first couple of flights, this bottom net is no longer necessary.
 
-![Netted Area](/Photos/nettedArea.jpg)
 
 Next, the propellers have to be attached. As stated before, motors 1 and 3 are spinning clockwise, which is important because the propellers are different depending on the direction you want them to spin. The propeller will spin towards the side that the elevated part of the blade is on. In other words, the leading edge travels in the direction of the rotation. Two clockwise propellers should be attached to motors 1 and 3, while two counterclockwise propellers should be attached to motors 2 and 4. The example below is motor 1, so it should rotate clockwise
-
- ![Propeller Direction](/Photos/propellerDirection.jpg)
 
 Ensure that all loose wires are secured to the body of the drone using zipties or tape. 
 
@@ -423,9 +465,9 @@ After all the soldering has been finished, use a cotton swab with a cleaning sol
 
 ## TODOs: 
 - add WIFI antennas
-- tuning rover.cfg
+- pid tuning rover.cfg (MAE)
 - add PCA9685 to rover.cfg file, and rename
-- motor calibration
+- motor calibration (MAE)
 - imu configuration/troubleshooting
 - ESC inactivity beep
 - gains from non_svo_flight_code to rtx
