@@ -364,8 +364,10 @@ Examples:
         0., 0., -1.0;
 ```
 
-See "Geometric Control and Estimation for Autonomous UAVs in Ocean Environments
-", Appendix B for details.
+### Resources
+In "Geometric Control and Estimation for Autonomous UAVs in Ocean Environments":
+- see Appendix B for fM Matrix details.
+- see Section 2.2.1 for Coordinate Frame Transformation details.
 
 # Attitude Testing and PID Tuning
 ## Attitude Testing
@@ -383,7 +385,7 @@ See "Geometric Control and Estimation for Autonomous UAVs in Ocean Environments
 
 ## Troubleshooting
 ### Frame Transforms (R_bi, R_mb, fM_to_forces):
-It could be that the drone will jerk around out of control when placed on the stand. This means that the matrices R_bi, R_mb are incorrect given the layout of the quadcopter.
+It could be that the drone will jerk around out of control when placed on the stand. This means that the matrices _R_bi_, _R_mb_, or _fM_to_forces_ are incorrect given the layout of the quadcopter. See [X Configuration](#-X-Configuration) for details about frame transforms.
 
 
 ## PID Tuning
