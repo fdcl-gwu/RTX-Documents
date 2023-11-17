@@ -151,7 +151,7 @@ Documentation reference: https://fdcl-gwu.github.io/fdcl-uav/
 Make the following code changes:
 
 ### Terminal 1 (ROVER)
-For explanation of Steps 1,2 below, see ["X vs + Details: ](#X-vs-+-Details).
+For explanation of Steps 1,2 below, see [X Configuration](#X-Configuration).
 1. src/fdcl_control.cpp
     - in ```fdcl::control::load_config(void)```, change ```fM_to_forces``` depending on where the motors are with respect to the body 1 axis.
 2. src/fdc_ekf.cpp
@@ -174,7 +174,6 @@ For explanation of Steps 1,2 below, see ["X vs + Details: ](#X-vs-+-Details).
         - Pins 3,5 use I2C Bus 7 (to check, run ```$ sudo i2cdetect -y -r 7```)
     - in ```int thr_val = map(thr[motor_index],0,250,204,409);```, change the numbers `204` and `409` to be `234` and `441` respectively.
     - in ```fdcl::i2c::open(void)```, change the `204` in ```pca9685->setPWM(i,0, 204)``` to be ```234```. For more details, see docs/pwm.md in fdcl-uav_rtx.
-    - TODO: why is PWM range weird?
 
 ### Terminal 2 (BASE)
 The base is used primarily for displaying data collected from the rover. Thus, the code changes aren't as crucial on the base for right now.
@@ -197,24 +196,36 @@ Before plugging in the battery for the first time, __double check that all posit
 
 If everything worked correctly, you should see a GUI appear that shows incoming data from the rover.
 
- ![GUI](/images/GUI.jpeg)
+ <img src="./images/GUI.jpeg" alt="GUI" width="500"/>
 
 ## Troubleshooting
-#### ```vn:timeout``` error: 
+### vn:timeout error: 
 This means the flight code cannot detect or read data from the IMU. Check the BAUD rate and port in rover.cfg, and check that UART RX and TX are wired correctly. Remember, IMU RX should go to Jetson TX, and IMU TX should go to Jetson RX. If this doesn't work, you may need to check the IMU calibration using the VectorNav Control Center software.
 
-#### ```PCA9685 Write/Read Byte Error```:
-This means that the PWM converter board cannot reached. TODO
+### PCA9685 Write/Read Byte Error:
+This means that the PWM converter board cannot reached. Make sure that the converter board address matches the address specified in JHPWMPCA9685.h. On some Jetsons, address 0x40 is reserved by the Jetson itself, and since the default PWM board address is also 0x40, you may need to add a solder bridge to change the address of the board to, say, 0x43. Also, make sure you're specifiying the correct I2C bus used on the Jetson in JHPWMPCA9685.c (the Orin Nano has 2 I2C busses). For details, see [Step 3: Configure Flight Code](#Step-3:-Configure-Flight-Code).
 
-TODO: Motor beep pattern, and changing PWM range in fdcl_i2c.cpp
+### ESC Beeping:
+This means the ESC hasn't received PWM signal in the correct range or order. When arming the ESC, it expects a low PWM signal to be sent first, and if this value is incorrect, the ESC will beep error tones indicating an incorrect arming sequence. Follow steps in [Motor Calibration](#Motor-Calibration) to set the PWM range of the ESCs. As indicated in the image below, the arming sequence was successful after the "Arm end 1 high beep":
+ 
+ <img src="./images/arm.png" alt="GUI" width="400"/>
+
+
+For details, refer to "Operation manual for BLHeli_32 ARM" which can be found on the internet.
 
 ### No GUI data: 
 This means the Jetson IP Address isn't correct in BOTH the base computer (base.cfg) and rover compter (rover.cfg). Alternatively, check that BOTH the base computer and rover computer are connected to the same WIFI network.
 
 # Motor Calibration
+MAE TODO
+
 __MAKE SURE PROPELLERS ARE OFF BEFORE POWERING DRONE__
+docs/pwm.md in fdcl-uav_rtx
+and changing PWM range in fdcl_i2c.cpp
 
 # Creating a VICON Object
+For Coordinate Frame Documentation, see (TODO - link).)
+
 We add small balls of reflexive material onto the drone so that it can be tracked by our VICON system. This small balls can be added anywhere on the frame or even the Jetson using double sided adhesive. The only thing to keep in mind is that we actually do not want the placement of these balls to be symmetric in pattern. Having an assymmetric arrangement allows the VICON system to know the orientation of the drone at all times. Note that you can also place balls on the actual Jetson itself.
 
 
@@ -231,8 +242,8 @@ VICON Frame:
 ```
 _In the following diagrams, the above VICON orientation is assumed. i.e. vicon axis v1 points right,  and v2 points up._
 
-### + Configuration (Default)
-If using + configuration, align body axis 1 (the direction of IMU x-axis) of the drone with axis 1 of the VICON system.
+### Establish VICON Marker Frame
+Align body axis 1 (the direction of IMU x-axis) of the drone with axis 1 of the VICON system:
 
 ```  
 For + config:   A4      
@@ -241,33 +252,14 @@ For + config:   A4
 
 A1-4: denotes arm 1-4 respectively.
 
-b1: aligned with A1
-b2: aligned with A2
-b3: into page (Right Hand Rule)
+Frame Definitions:
+  b1: aligned with A1
+  b2: aligned with A2
+  b3: into page (Right Hand Rule)
 
-i1: aligned with A1
-i2: aligned with A4 (we mounted IMU upside down)
-i3: out of page
-```
-
-### X Configuration
-If using X configuration, the NEW body 1 axis will be between arms 1 and 2. Align this new b1 axis with axis 1 of the VICON system. Here, arm 1 is the arm with motor 1 on it. Then, arm 2 is clockwise from arm 1. See Coordinate Frame Documentation (TODO - link) for details.
-
-```  
-For X config: 
-              A4    A1
-                 X    --> New b1 direction
-		          A3    A2
-
-A1-4: denotes arm 1-4 respectively.
-
-b1: new b1
-b2: straight down
-b3: into page (Right Hand Rule)
-
-i1: aligned with new b1
-i2: straight up (we mounted IMU upside down)
-i3: out of page
+  i1: aligned with A1
+  i2: aligned with A4 (we mounted IMU upside down)
+  i3: out of page
 ```
 
 Open up the GUI (from Step 4: Run Flight Code). Pay attention to the data labeled "__YPR__" (yaw, pitch, roll). For now we only have to worry about pitch and roll, so ignore the first row of data. Because our IMU was mounted upside down, we want the pitch to be 0 and the roll to be -180. Add small objects such as screws underneath the legs of the drone until these numbers match the figures we want fairly accurately. At this point, we are ready to create the VICON object.
@@ -289,7 +281,9 @@ On the object line, replace "NAME_OF_VICON_OBEJCT", or whatever is there by defa
 
 While you have the rover.cfg file open, it is also a good time to record the drone's weight. At this point, we can attach an external battery to the bottom of the frame using velco straps and double sided adhesive. When placing the drone on the scale, also add all the propellers, and propeller attachments that will eventually be added for the final flight. These components do not have to actually be attached to the drone yet, so they can just be placed loosely onto the scale. In the rover.cfg file, look for the `UAV` section. Under that, there should be a line that looks like `m: 1.75`. Replace this number with the measured weight of the drone in kilograms.
 
-### X vs + Details
+### Flight Orientation
+By default, the code assumes the b1 direction is aligned with arm 1. In other words, when the drons is flying, the "forwards" or "heading" direction is the direction that arm 1 is pointing in.
+
 After creating the VICON object and updating it's name in the configuration files, when you rerun the flight code, the R matrix should display the __identity matrix__ (3x3 matrix, 1's on diagonal) when b1 is aligned with v2. This is what we will call "Flight Orientation". The controller will try to achieve this orientation (such that R=I) when starting/hovering.
 
 Flight Orientation for + Configuration (such that R=I):
@@ -308,14 +302,14 @@ i2: left
 i3: out of page
 ```
 
-If you are using the X Configuration, we want R=I when the new body 1 axis (between A1 and A2) is aligned with v2. To do this, you'll need to change three things. 
-1. Update fM_to_forces: TODO
-2. Update R_bi: TODO
-3. Update R_mb: TODO
+### X Configuration
+If instead we want to fly in an X configuration, the NEW body 1 axis will be between two arms. So if we choose arms 1 and 2, then the new "forward", or "heading" direction will be the direction between A1 and A2. Therefore, we want R=I when the new body 1 axis (between A1 and A2) is aligned with v2. 
 
 Flight Orientation for X Configuration (such that R=I):
 
 ```  
+new b1 between A1 and A2
+
               A1    A2
                  X    
 		          A4    A3
@@ -327,6 +321,47 @@ b3: into page (Right Hand Rule)
 i1: aligned with A1
 i2:aligned with A4
 i3: out of page
+```
+
+To do this, you'll need to change three things:
+
+1. Update fM_to_forces: this matrix descrives the force-moments generated by the motors around the three body axes.
+    - ~line 302, fdcl-uav_rtx/src/fdcl_control.cpp
+2. Update R_bi: this is the transformation from the IMU frame to the body frame.
+    - ~line 129, fdcl-uav_rtx/src/fdcl_ekf.cpp
+3. Update R_mb: this is the transformation from the body frame to the VICON marker frame.
+    - ~line 129, fdcl-uav_rtx/src/fdcl_ekf.cpp
+
+Examples:
+- X configuration (new b1 between motor 4 and motor 1)
+```
+    fM_to_forces << 1.0, 1.0, 1.0, 1.0,
+        -l_sqrt_2, -l_sqrt_2, l_sqrt_2, l_sqrt_2,
+        l_sqrt_2, -l_sqrt_2, -l_sqrt_2, l_sqrt_2,
+        -c_tf, c_tf, -c_tf, c_tf;
+
+    R_bi << cos(M_PI / 4.), sin(M_PI / 4.), 0.,
+        sin(M_PI / 4.), -cos(M_PI / 4.), 0.,
+        0., 0., -1.0;
+
+    R_mb << cos(M_PI / 4.), sin(M_PI / 4.), 0.,
+        sin(M_PI / 4.), -cos(M_PI / 4.), 0.,
+        0., 0., -1.0;
+```
+- X configuration (new b1 between motor 1 and motor 2)
+```
+    fM_to_forces << 1.0, 1.0, 1.0, 1.0,
+        l_sqrt_2, -l_sqrt_2, -l_sqrt_2, l_sqrt_2,
+        l_sqrt_2, l_sqrt_2, -l_sqrt_2, -l_sqrt_2,
+        -c_tf, c_tf, -c_tf, c_tf;
+
+    R_bi << cos(M_PI / 4.), -sin(M_PI / 4.), 0.,
+        -sin(M_PI / 4.), -cos(M_PI / 4.), 0.,
+        0., 0., -1.0;
+
+    R_mb << cos(M_PI / 4.), -sin(M_PI / 4.), 0.,
+        -sin(M_PI / 4.), -cos(M_PI / 4.), 0.,
+        0., 0., -1.0;
 ```
 
 See "Geometric Control and Estimation for Autonomous UAVs in Ocean Environments
@@ -347,7 +382,9 @@ See "Geometric Control and Estimation for Autonomous UAVs in Ocean Environments
 5. Turn the motor on, the select "Warmup", and then "Takeoff". This will attempt to align the UAV such that the R matrix is the identity (i.e. to hover).
 
 ## Troubleshooting
-Frame Transforms (R_bi, R_mb, fM_to_forces): TODO
+### Frame Transforms (R_bi, R_mb, fM_to_forces):
+It could be that the drone will jerk around out of control when placed on the stand. This means that the matrices R_bi, R_mb are incorrect given the layout of the quadcopter.
+
 
 ## PID Tuning
 PID Tune: TODO
