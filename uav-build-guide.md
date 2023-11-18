@@ -1,21 +1,26 @@
-# UAV Build Guide
-Written by GW RTX Drone Challenge Team
+# UAV Build Guide - GW's 2024 RTX Drone Challenge Team
+_Written by Karl Simon, [add your names here], Fall 2023_
 
 ## Components Needed:
 
 ### Quadcopter:
 - Motors (x4): T-Motor MN3110-17 KV-700
+- Propellers (x4) T-Motor MS1101
 - Frame:
-- ESC (x4): 
+- ESC (x4): Cyclone 35A ESC 2S-6S Lipo BLHeli_S
 - Jetson Orin Nano
-  - NVME SSD (recommended: Crucial P3 500GB)
+- NVME SSD (recommended: Crucial P3 500GB)
 - 4s 3-5000mAh LiPo Battery
-- VN100 IMU
+- VN100 IMU (Rugged)
 - 5V regulator
 - Adafruit PCA9685 PWM Converter Board
 - 5-6 Refelctive Markers
 - Wires and mounting hardware
+- Small through-hole breadboard
+- Assortment of wires and gauges, socket hex screws, and tools
 
+### Hexacopter:
+TODO
 
 # Frame Assembly
 
@@ -173,7 +178,7 @@ For explanation of Steps 1,2 below, see [X Configuration](#X-Configuration).
     - kI2CBus = #: The I2C bus being used on the Jetson (/dev/i2c-#_
         - Pins 3,5 use I2C Bus 7 (to check, run ```$ sudo i2cdetect -y -r 7```)
     - in ```int thr_val = map(thr[motor_index],0,250,204,409);```, change the numbers `204` and `409` to be `234` and `441` respectively.
-    - in ```fdcl::i2c::open(void)```, change the `204` in ```pca9685->setPWM(i,0, 204)``` to be ```234```. For more details, see docs/pwm.md in fdcl-uav_rtx.
+    - in ```fdcl::i2c::open(void)```, change the `204` in ```pca9685->setPWM(i,0, 204)``` to be ```234```. For more details, see [pwm.md](pwm.md) in RTX-Documents.
 
 ### Terminal 2 (BASE)
 The base is used primarily for displaying data collected from the rover. Thus, the code changes aren't as crucial on the base for right now.
@@ -260,10 +265,10 @@ MOTOR:
 
 ## Optional: Control Motors and Measure Thrust (Jetson)
 TODO (Karl): Doing motor calibration using Jetson
-- See docs/pwm.md in fdcl-uav_rtx for changing PWM range in fdcl_i2c.cpp
+- See [pwm.md](pwm.md) in RTX-Documents for changing PWM range in fdcl_i2c.cpp
 
 # Creating a VICON Object
-For Coordinate Frame Documentation, see (TODO - link).)
+For Coordinate Frame Documentation, see [Coordinate Frame Documentation.pdf](Coordinate-Frame-Documentation.pdf) in RTX-Documents.
 
 We add small balls of reflexive material onto the drone so that it can be tracked by our VICON system. This small balls can be added anywhere on the frame or even the Jetson using double sided adhesive. The only thing to keep in mind is that we actually do not want the placement of these balls to be symmetric in pattern. Having an assymmetric arrangement allows the VICON system to know the orientation of the drone at all times. Note that you can also place balls on the actual Jetson itself.
 
