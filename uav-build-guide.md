@@ -196,7 +196,7 @@ Before plugging in the battery for the first time, __double check that all posit
 
 If everything worked correctly, you should see a GUI appear that shows incoming data from the rover.
 
- <img src="./images/GUI.jpeg" alt="GUI" width="500"/>
+ <img src="./images/GUI.jpeg" alt="GUI" width="600"/>
 
 ## Troubleshooting
 ### vn:timeout error: 
@@ -222,11 +222,45 @@ If you are unable to ssh into the Jetson, first check that the base and rover ar
 If this hasn't fixed the issue, it could be that the antenna is mounted in an orientation that doesn't allow much signal to reach it. To remove the antennas from the Orin Nano developer board, unscrew the four screws on the top of the Jetson (the side with the fan) to remove the plastic rim. Then carefully "pop" out the rectangular wifi antennas from the plastic rim. Remount these outside the quadcopter so they're more exposed, ideally having one mounted horizontally and the other mounted vertically.
 
 # Motor Calibration
-MAE TODO
+__BEFORE STARTING, MAKE SURE PROPELLERS ARE OFF ALL MOTORS__
 
-__MAKE SURE PROPELLERS ARE OFF BEFORE POWERING DRONE__
+The goal of motor calibration is to obtain 3 coefficits that describe a nonlinear function representing a throttle curve. This curve relates motor commands to motor thrusts.
 
-See docs/pwm.md in fdcl-uav_rtx for changing PWM range in fdcl_i2c.cpp
+## Control Motors and Measure Thrust (Arduino)
+
+ We will be using a simple arduino script to power the motors for our purposes, and we'll run a Matlab program to approximate a function for our command-to-thrust measurements:
+
+Find the ```motor_Report/``` directory. This contains details about how to setup the experiment, and motor_Report/motorReport.md provides the arduino script. 
+
+TODO: MAE ADD INFORMATION about how to set up test. Then for values 0-250 in increments of 10, read the thrust from the force sensor. You may need to attach a mass to the stand, but see https://github.com/fdcl-gwu/motor-calibration for details. For Arduino, a command of 1000 is equivalent to 0, and a command of 2000 is equivalent to 250. Make sure to scale the ranges accordingly.
+
+## Getting Throttle Curve Coefficients
+Once you can power the motor, clone the motor calibrataion library from the lab's GitHub: https://github.com/fdcl-gwu/motor-calibration. Enter ```motor_data\``` and find the file which says "tiger_mn3110-17_ms1101_battery". 
+  - If you're using a different motor/prop combination, you will need to create a new directory and make modifications (but you can start by copying an existing one). For our RTK drone, we will stick with "tiger_mn3110-17_ms1101_battery".
+
+Within this directory, you should see two files, ```run_calibration_arduino.m``` and ```v16p4_1motor_1prop_power_supply.txt```:
+  - ```run_calibration_arduino.m```:  This is the Matlab code to fit the data points provided by the .txt file. It will output three coefficieints which will be set in fdcl-uav_rtx/rover.cfg. Make sure to change a1, b1, d2, w2 based on the metal thrust stand configuration you're using (refer to the README.md of the repo for the meaning of the variables). 
+  - ```v16p4_1motor_1prop_power_supply.txt```: This is where the command-to-thrust values obtained from [above](#Control-Motors-and-Measure-Thrust-(Arduino)) are kept.
+    - __NOTE:__ consider creating a new text file with a new name to avoid overwriting the ones currently in the repo. Make sure to then import this new .txt file within the ```run_calibration_arduino.m``` code.
+
+  Now enter the name of the matlab script to run it, and it will produce the following:
+
+ <img src="./images/matlab.png" alt="GUI" width="600"/>
+
+  In the command window, you will find the three coefficients.
+  
+  Finally, in fdcl-uav_rtx/rover.cfg, update the coefficients of calibPWM to those found above:
+```
+MOTOR:
+ type: "Tiger700"
+ calib_large_motors: 129.9, 0.3666, -96.73
+ calib: 61.01, .5634, -11.35
+ calibPWM: 68.01, 0.4939, 26.61 
+```
+
+## Optional: Control Motors and Measure Thrust (Jetson)
+TODO (Karl): Doing motor calibration using Jetson
+- See docs/pwm.md in fdcl-uav_rtx for changing PWM range in fdcl_i2c.cpp
 
 # Creating a VICON Object
 For Coordinate Frame Documentation, see (TODO - link).)
